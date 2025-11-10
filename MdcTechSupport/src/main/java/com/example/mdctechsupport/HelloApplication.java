@@ -2,22 +2,19 @@ package com.example.mdctechsupport;
 
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.fxml.FXMLLoader;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
-import javafx.scene.control.TextArea;
 
-import java.awt.*;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -26,234 +23,202 @@ public class HelloApplication extends Application {
 
     private SupportDesk supportDesk;
 
+    // Form fields
     private TextField ticketIdTf;
     private TextField requesterNameTf;
     private TextArea issueTf;
     private ComboBox<String> priorityCb;
 
-    private Button addTicketBtn;
-    private Button exitBtn;
-
-    TableView<Ticket> activeTicketsTable;
-    TableView<Ticket> resolvedTicketsTable;
+    // Tables
+    private TableView<Ticket> activeTicketsTable;
+    private TableView<Ticket> resolvedTicketsTable;
 
     @Override
     public void start(Stage primaryStage) throws IOException {
-
         supportDesk = new SupportDesk();
+
         BorderPane mainPane = new BorderPane();
         mainPane.setTop(createHeader());
         mainPane.setLeft(createAddTicketForm());
         mainPane.setCenter(createTicketsDisplay());
 
-
         Scene scene = new Scene(mainPane, 800, 580);
-        primaryStage.setTitle("Mdc Tech Support System");
+        primaryStage.setTitle("MDC Tech Support System");
         primaryStage.setScene(scene);
         primaryStage.show();
-
     }
 
+    /* ---------------- HEADER ---------------- */
     private Pane createHeader() {
-
-        StackPane headerPane = new StackPane();
-        headerPane.setBackground(new Background(new BackgroundFill(
-                Color.rgb(74, 144, 226),  // your background color
-                new CornerRadii(0),        // 0 for square corners
-                Insets.EMPTY)));
-
-        javafx.scene.control.Label mdcLabel = new Label("MDC Tech Support Ticket System");
-        mdcLabel.setPadding(new Insets(20, 0, 20, 0));
-        mdcLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD ,24));
+        Label mdcLabel = new Label("MDC Tech Support Ticket System");
+        mdcLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 24));
         mdcLabel.setTextFill(Color.rgb(245, 245, 245));
-        headerPane.getChildren().add(mdcLabel);
+        mdcLabel.setPadding(new Insets(20, 0, 20, 0));
 
+        StackPane headerPane = new StackPane(mdcLabel);
+        headerPane.setBackground(new Background(
+                new BackgroundFill(Color.rgb(74, 144, 226), CornerRadii.EMPTY, Insets.EMPTY)
+        ));
         return headerPane;
-
     }
 
+    /* ---------------- FORM ---------------- */
     private Pane createAddTicketForm() {
+        // Main container
+        VBox formPane = createFormContainer();
 
-        StackPane wrapperPane = new StackPane();
-        wrapperPane.setPadding(new Insets(20));
+        // Form title
+        Label formNameLabel = createSectionLabel("New Ticket");
 
-        VBox formPane = new VBox(15);
-        formPane.setBorder(new Border(new BorderStroke(
-                Color.GRAY,                   // border color
-                BorderStrokeStyle.SOLID,      // border style
-                new CornerRadii(5),           // rounded corners, 0 for square
-                new BorderWidths(2)           // thickness
-        )));
-        formPane.setPadding(new Insets(20));
-
-        Label formNameLabel = new Label("New Ticket");
-        formNameLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
-        HBox formLabelWrapper = new HBox(formNameLabel);
-        formLabelWrapper.setAlignment(Pos.CENTER);
-
-
-        //Form Labels
+        // Ticket ID
         Label ticketIdLbl = new Label("Ticket ID");
-        Label requesterNameLbl = new Label("Requester Name");
-        Label issueDescriptionLbl = new Label("Issue Description");
-        Label priorityLbl = new Label("Priority");
-
-        //TextBoxes
         ticketIdTf = new TextField();
         ticketIdTf.setTextFormatter(new TextFormatter<>(change ->
                 change.getControlNewText().matches("\\d*") ? change : null
         ));
 
-        Label ticketIdError = new Label("* This ID is already taken");
-        ticketIdError.setTextFill(Color.RED);
-        ticketIdError.setVisible(false);
-        ticketIdError.managedProperty().bind(ticketIdError.visibleProperty());
-
+        Label ticketIdError = createErrorLabel("* This ID is already taken");
         ticketIdTf.focusedProperty().addListener((obs, oldVal, newVal) -> {
-            if (!newVal) { // lost focus
-                try {
-                    int id = Integer.parseInt(ticketIdTf.getText());
-                    if (!Ticket.isIdAvailable(id)) {
-                        ticketIdError.setVisible(true);
-                        ticketIdTf.setStyle("-fx-border-color: red;");
-                    } else {
-                        ticketIdError.setVisible(false);
-                        ticketIdTf.setStyle(null);
-
-                    }
-                } catch (NumberFormatException e) {
-                    //ticketIdError.setVisible(true); // invalid number
-                    //ticketIdTf.setStyle("-fx-border-color: red;");
-                    //showAlert(e.getMessage());
-                }
-            }
+            if (!newVal) validateTicketId(ticketIdError);
         });
+        ticketIdTf.setOnKeyTyped(e -> resetField(ticketIdTf, ticketIdError));
 
-        ticketIdTf.setOnKeyTyped(e -> {
-            ticketIdTf.setStyle("");
-            ticketIdError.setVisible(false);
-        });
+        VBox ticketIdBox = new VBox(2, ticketIdLbl, ticketIdTf, ticketIdError); // small spacing 2
 
+        // Requester Name
+        Label requesterNameLbl = new Label("Requester Name");
         requesterNameTf = new TextField();
-        requesterNameTf.setOnKeyTyped(e -> requesterNameTf.setStyle(""));
+        requesterNameTf.setOnKeyTyped(e -> resetField(requesterNameTf, null));
+        VBox requesterBox = new VBox(2, requesterNameLbl, requesterNameTf);
 
+        // Issue Description
+        Label issueLbl = new Label("Issue Description");
         issueTf = new TextArea();
         issueTf.setWrapText(true);
         issueTf.setPrefRowCount(6);
         issueTf.setPrefWidth(200);
-        issueTf.setOnKeyTyped(e -> issueTf.setStyle(""));
+        issueTf.setOnKeyTyped(e -> resetField(issueTf, null));
+        VBox issueBox = new VBox(2, issueLbl, issueTf);
 
-        priorityCb =  new ComboBox<>();
-
+        // Priority
+        Label priorityLbl = new Label("Priority");
+        priorityCb = new ComboBox<>();
         priorityCb.getItems().addAll("Low", "Medium", "High");
         priorityCb.setValue("Low");
+        VBox priorityBox = new VBox(2, priorityLbl, priorityCb);
 
-        addTicketBtn = new Button("Add Ticket");
-        addTicketBtn.setMaxWidth(Double.MAX_VALUE);
-        VBox.setVgrow(addTicketBtn, Priority.ALWAYS);
-        addTicketBtn.setOnAction(e -> addTicket());
+        // Buttons
+        Button addTicketBtn = createWideButton("➕ Add Ticket", e -> addTicket());
+        Button exitBtn = createWideButton("❌ Exit/Close", e -> displayExitMessage());
+        VBox buttonBox = new VBox(5, addTicketBtn, exitBtn); // small spacing between buttons
 
-        exitBtn = new Button("Exit/Close");
-        exitBtn.setMaxWidth(Double.MAX_VALUE);
-        VBox.setVgrow(exitBtn, Priority.ALWAYS);
+        // Add all to main form pane
+        formPane.getChildren().addAll(
+                formNameLabel,
+                ticketIdBox,
+                requesterBox,
+                issueBox,
+                priorityBox,
+                buttonBox
+        );
 
-        exitBtn.setOnAction(e -> displayExitMessage());
-
-        VBox ticketIdRow = new VBox(3, ticketIdLbl, ticketIdTf, ticketIdError);
-        VBox requestNameRow = new VBox(3, requesterNameLbl, requesterNameTf);
-        VBox issueRow = new VBox(3, issueDescriptionLbl, issueTf);
-        VBox priorityRow = new VBox(3, priorityLbl, priorityCb);
-
-        formPane.getChildren().addAll(formLabelWrapper,
-                ticketIdRow,
-                requestNameRow,
-                issueRow,
-                priorityRow,
-                addTicketBtn, exitBtn);
-
-        VBox.setVgrow(formNameLabel, Priority.ALWAYS);
-        formNameLabel.setAlignment(Pos.CENTER);
-        wrapperPane.getChildren().add(formPane);
+        StackPane wrapperPane = new StackPane(formPane);
+        wrapperPane.setPadding(new Insets(20));
 
         return wrapperPane;
     }
 
-    private void displayExitMessage() {
 
-        showAlert("Thank you for using MDC Tech Support Ticket System!");
-        Platform.exit();
+
+    private VBox createFormContainer() {
+        VBox box = new VBox(15);
+        box.setPadding(new Insets(20));
+        box.setBorder(new Border(new BorderStroke(
+                Color.GRAY, BorderStrokeStyle.SOLID, new CornerRadii(5), new BorderWidths(2)
+        )));
+        return box;
     }
 
+    /* ---------------- TICKETS DISPLAY ---------------- */
     private Pane createTicketsDisplay() {
+        VBox ticketDisplayPane = createFormContainer();
 
-        StackPane wrapperPane = new StackPane();
-        wrapperPane.setPadding(new Insets(20));
+        Label activeLbl = createSectionLabel("Active Tickets");
+        Label resolvedLbl = createSectionLabel("Recently Resolved Tickets");
 
-        VBox ticketDisplayPane = new VBox(15);
-        ticketDisplayPane.setBorder(new Border(new BorderStroke(
-                Color.GRAY,                   // border color
-                BorderStrokeStyle.SOLID,      // border style
-                new CornerRadii(5),           // rounded corners, 0 for square
-                new BorderWidths(2)           // thickness
-        )));
-        ticketDisplayPane.setPadding(new Insets(20));
+        activeTicketsTable = createTicketTable();
+        resolvedTicketsTable = createTicketTable();
 
-        Label activeTicketsLbl = new Label("Active Tickets");
-        activeTicketsLbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+        // Set preferred heights based on number of visible rows
+        int activeRows = 6; // show 6 rows for active tickets
+        int resolvedRows = 4; // show 4 rows for recently resolved
+        double rowHeight = 25; // approximate row height
+        double headerHeight = 28; // approximate header height
 
-        Label recentlyResolvedTicketsLbl = new Label("Recently Resolved Tickets");
-        recentlyResolvedTicketsLbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+        activeTicketsTable.setPrefHeight(activeRows * rowHeight + headerHeight);
+        resolvedTicketsTable.setPrefHeight(resolvedRows * rowHeight + headerHeight);
 
-        activeTicketsTable = new TableView<Ticket>();
-        resolvedTicketsTable = new TableView<Ticket>();
-
-        activeTicketsTable.getColumns().addAll(createTicketColumns());
-        resolvedTicketsTable.getColumns().addAll(createTicketColumns());
+        // Make tables grow vertically if space allows
+        VBox.setVgrow(activeTicketsTable, Priority.ALWAYS);
+        VBox.setVgrow(resolvedTicketsTable, Priority.ALWAYS);
 
         activeTicketsTable.setItems(supportDesk.getActiveTicketsObservable());
         resolvedTicketsTable.setItems(supportDesk.getResolvedTicketsObservable());
 
-        activeTicketsTable.setEditable(false);
-        resolvedTicketsTable.setEditable(false);
-
-        activeTicketsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        resolvedTicketsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-
-        //Control buttons
-        Button processNextBtn = new Button("Process Next");
-        Button reopenLastBtn = new Button("Reopen Last");
+        Button processNextBtn = new Button("▶ Process Next");
+        Button reopenLastBtn = new Button("\uD83D\uDD04 Reopen Last");
 
         processNextBtn.setOnAction(e -> processNextTicket());
         reopenLastBtn.setOnAction(e -> reopenLastResolved());
 
         ticketDisplayPane.getChildren().addAll(
-                activeTicketsLbl, processNextBtn,activeTicketsTable,
-                recentlyResolvedTicketsLbl, reopenLastBtn ,resolvedTicketsTable
+                activeLbl, processNextBtn, activeTicketsTable,
+                resolvedLbl, reopenLastBtn, resolvedTicketsTable
         );
 
-        wrapperPane.getChildren().add(ticketDisplayPane);
-
-        return wrapperPane;
+        StackPane wrapper = new StackPane(ticketDisplayPane);
+        wrapper.setPadding(new Insets(20));
+        return wrapper;
     }
 
-    private List<TableColumn<Ticket, ?>> createTicketColumns()  {
+    private TableView<Ticket> createTicketTable() {
+        TableView<Ticket> table = new TableView<>();
+        table.getColumns().addAll(createTicketColumns(table));
+        table.setEditable(false);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        return table;
+    }
+
+    private List<TableColumn<Ticket, ?>> createTicketColumns(TableView<Ticket> tableView) {
+
+        //tableView.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         TableColumn<Ticket, Number> idCol = new TableColumn<>("ID");
-        idCol.setCellValueFactory(cellData -> cellData.getValue().getId());
+        idCol.setCellValueFactory(cellData -> cellData.getValue().idProperty());
+        idCol.setSortable(false);
 
         TableColumn<Ticket, String> requesterCol = new TableColumn<>("Requester");
-        requesterCol.setCellValueFactory(cellData -> cellData.getValue().getName());
+        requesterCol.setCellValueFactory(cellData -> cellData.getValue().nameProperty());
+        requesterCol.setSortable(false);
 
         TableColumn<Ticket, String> issueCol = new TableColumn<>("Issue");
-        issueCol.setCellValueFactory(cellData -> cellData.getValue().getIssue());
+        issueCol.setCellValueFactory(cellData -> cellData.getValue().issueProperty());
+        issueCol.setSortable(false);
 
         TableColumn<Ticket, String> priorityCol = new TableColumn<>("Priority");
-        priorityCol.setCellValueFactory(cellData -> cellData.getValue().getPriority());
+        priorityCol.setCellValueFactory(cellData -> cellData.getValue().priorityProperty());
+        priorityCol.setSortable(false);
+
+
+        idCol.setMaxWidth(1f * Integer.MAX_VALUE * 0.1);       // 10%
+        requesterCol.setMaxWidth(1f * Integer.MAX_VALUE * 0.3); // 30%
+        issueCol.setMaxWidth(1f * Integer.MAX_VALUE * 0.45);     // 40%
+        priorityCol.setMaxWidth(1f * Integer.MAX_VALUE * 0.15);  // 20%
 
         return Arrays.asList(idCol, requesterCol, issueCol, priorityCol);
     }
 
+    /* ---------------- LOGIC ---------------- */
     private void addTicket() {
-
         try {
             int id = Integer.parseInt(ticketIdTf.getText());
             String name = requesterNameTf.getText();
@@ -262,94 +227,106 @@ public class HelloApplication extends Application {
 
             supportDesk.addTicket(new Ticket(id, name, issue, priority));
 
-            ticketIdTf.clear();
-            requesterNameTf.clear();
-            issueTf.clear();
-            priorityCb.setValue("Low");
+            clearFields();
+            clearFieldStyles();
+            showAlert("Ticket with ID " + id + " successfully added!");
 
-            clearFieldsErrors();
-        }
-
-        catch (NumberFormatException ex) {
-            showAlert("ID must be a number");
-            ticketIdTf.setStyle("-fx-border-color: red; -fx-border-width: 2px;");
-            ticketIdTf.requestFocus();
-        }
-
-        catch (Exception ex) {
-
-            String errorMessage = ex.getMessage().toLowerCase();
-
-            if (errorMessage.contains("id")) {
-                ticketIdTf.setStyle("-fx-border-color: red;");
-                ticketIdTf.requestFocus();
-                ticketIdTf.setStyle("-fx-border-color: red;");
-            }
-
-            else if (errorMessage.contains("name")) {
-                requesterNameTf.setStyle("-fx-border-color: red;");
-                requesterNameTf.requestFocus();
-                requesterNameTf.setStyle("-fx-border-color: red;");
-
-            }
-
-            else if (errorMessage.contains("issue")) {
-                issueTf.setStyle("-fx-border-color: red;");
-                issueTf.requestFocus();
-                issueTf.setStyle("-fx-border-color: red;");
-            }
-
-            else
-                showAlert(ex.getMessage());
+        } catch (NumberFormatException ex) {
+            markFieldError(ticketIdTf, "ID must be a valid number");
+        } catch (Exception ex) {
+            highlightFieldByError(ex.getMessage());
         }
     }
 
-    private void validateRequiredField(TextInputControl field) {
-        field.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-            if (!isNowFocused) { // when the user leaves the field
-                String text = field.getText();
-                if (text == null || text.trim().isEmpty()) {
-                    field.setStyle("-fx-border-color: red;");
-                } else {
-                    field.setStyle(null);
-                }
-            }
-        });
+    private void processNextTicket() {
+        if (!supportDesk.processNextTicket())
+            showAlert("There are no more tickets to process!");
     }
 
+    private void reopenLastResolved() {
+        if (!supportDesk.reopenLastResolved())
+            showAlert("There are no more tickets to reopen!");
+    }
 
-    private void clearFieldsErrors() {
+    /* ---------------- HELPERS ---------------- */
+    private void clearFields() {
+        ticketIdTf.clear();
+        requesterNameTf.clear();
+        issueTf.clear();
+        priorityCb.setValue("Low");
+    }
+
+    private void clearFieldStyles() {
         ticketIdTf.setStyle(null);
         requesterNameTf.setStyle(null);
         issueTf.setStyle(null);
     }
 
-    private void processNextTicket() {
-
-        boolean canProcessTicket = supportDesk.processNextTicket();
-
-        if (!canProcessTicket) {
-            showAlert("There are no more tickets to process!");
-        }
+    private void resetField(Control field, Label errorLabel) {
+        field.setStyle(null);
+        if (errorLabel != null) errorLabel.setVisible(false);
     }
 
-    private void reopenLastResolved() {
+    private void validateTicketId(Label errorLabel) {
+        try {
+            int id = Integer.parseInt(ticketIdTf.getText());
+            boolean taken = !Ticket.isIdAvailable(id);
+            errorLabel.setVisible(taken);
+            ticketIdTf.setStyle(taken ? "-fx-border-color: red;" : null);
+        } catch (NumberFormatException ignored) {}
+    }
 
-        boolean canReopenTicket = supportDesk.reopenLastResolved();
+    private void markFieldError(Control field, String message) {
+        field.setStyle("-fx-border-color: red;");
+        field.requestFocus();
+        showAlert(message);
+    }
 
-        if (!canReopenTicket) {
-            showAlert("There are no more tickets to reopen!");
-        }
+    private void highlightFieldByError(String message) {
+        String msg = message.toLowerCase();
+        if (msg.contains("id")) markFieldError(ticketIdTf, message);
+        else if (msg.contains("name")) markFieldError(requesterNameTf, message);
+        else if (msg.contains("issue")) markFieldError(issueTf, message);
+        else showAlert(message);
+    }
+
+    private void displayExitMessage() {
+        showAlert("Thank you for using MDC Tech Support Ticket System!");
+        Platform.exit();
+    }
+
+    /* ---------------- UI UTILITIES ---------------- */
+    private Label createSectionLabel(String text) {
+        Label lbl = new Label(text);
+        lbl.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+        lbl.setAlignment(Pos.CENTER);
+        return lbl;
+    }
+
+    private Label createErrorLabel(String text) {
+        Label lbl = new Label(text);
+        lbl.setTextFill(Color.RED);
+        lbl.setVisible(false);
+        lbl.managedProperty().bind(lbl.visibleProperty());
+        return lbl;
+    }
+
+    private Button createWideButton(String text, EventHandler<ActionEvent> action){
+        Button btn = new Button(text);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setOnAction(action);
+        VBox.setVgrow(btn, Priority.ALWAYS);
+
+        return btn;
     }
 
     private void showAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Notice");
-        alert.setHeaderText(null); // removes the header
+        alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
     }
-
 
     public static void main(String[] args) {
         launch();

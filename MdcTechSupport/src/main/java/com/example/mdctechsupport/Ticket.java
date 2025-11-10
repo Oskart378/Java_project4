@@ -23,7 +23,7 @@ public class Ticket {
             throw new IllegalArgumentException("Name can't be blank or null");
         if(issue == null || issue.isBlank())
             throw new IllegalArgumentException("Issue can't be blank or null");
-        if(priority == null || !isPriorityValid(priority))
+        if(!isPriorityValid(priority))
             throw new IllegalArgumentException("Priority has to be one of the following values (low, medium or high)");
 
         this.id = new SimpleIntegerProperty(id);
@@ -38,24 +38,44 @@ public class Ticket {
     }
 
     public static boolean isPriorityValid(String priority) {
+        if (priority == null)
+            return false;
+
         priority = priority.toLowerCase();
         return (priority.equals("low") || priority.equals("medium") ||
                 priority.equals("high"));
     }
 
-    public SimpleIntegerProperty getId() {
+    public int getId() {
+        return id.get();
+    }
+
+    public SimpleIntegerProperty idProperty() {
         return id;
     }
 
-    public SimpleStringProperty getName() {
+    public String getName() {
+        return name.get();
+    }
+
+    public SimpleStringProperty nameProperty() {
         return name;
     }
 
-    public SimpleStringProperty getIssue() {
+    public String getIssue() {
+        return issue.get();
+    }
+
+    public SimpleStringProperty issueProperty() {
         return issue;
     }
 
-    public SimpleStringProperty getPriority() {
+    public String getPriority() {
+        // Return nicely formatted version
+        return priority.get().substring(0, 1).toUpperCase() + priority.get().substring(1);
+    }
+
+    public SimpleStringProperty priorityProperty() {
         return new SimpleStringProperty(
                 priority.getValue().substring(0, 1).toUpperCase() +
                         priority.getValue().substring(1));
