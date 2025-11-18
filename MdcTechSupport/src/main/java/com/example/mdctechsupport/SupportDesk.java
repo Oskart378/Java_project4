@@ -1,14 +1,30 @@
+/*---------------------------------------------------
+Name: Oscar Lopez, Enoc Bernal, Brenda Benitez
+COP 2805C - Java Programming 2
+Fall 2025 - W 5:30 PM - 8:50 PM
+Assignment # 4
+Plagiarism Statement
+I certify that this assignment is my own work and that I have not
+copied in part or whole or otherwise plagiarized the work of other
+students, persons, Generative Pre-trained Generators (GPTs) or any other AI tools.
+I understand that students involved in academic dishonesty will face
+disciplinary sanctions in accordance with the College's Student Rights
+and Responsibilities Handbook (https://www.mdc.edu/rightsandresponsibilities)
+01234567890123456789012345678901234567890123456789012345678901234567890123456789
+----------------------------------------------------------*/
+
 package com.example.mdctechsupport;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Stack;
 
 public class SupportDesk {
 
-    private final LinkedList<Ticket> activeTickets;
+    private final Queue<Ticket> activeTickets;
     private final Stack<Ticket> resolvedTickets;
 
     private final ObservableList<Ticket> activeTicketsObservable;
@@ -22,21 +38,27 @@ public class SupportDesk {
         resolvedTicketsObservable = FXCollections.observableArrayList(resolvedTickets);
     }
 
+    private void updateLists() {
+        activeTicketsObservable.setAll(activeTickets);
+        resolvedTicketsObservable.setAll(resolvedTickets);
+    }
+
     public void addTicket(Ticket t) {
-        activeTickets.addLast(t);
-        activeTicketsObservable.add(t); // keep ObservableList in sync
+        activeTickets.add(t);
+       updateLists(); // keep ObservableList in sync
     }
 
     public boolean processNextTicket() {
         if (activeTickets.isEmpty())
             return false;
 
-        Ticket removed = activeTickets.removeFirst();
+        Ticket removed = activeTickets.remove();
         resolvedTickets.push(removed);
 
         // Update observable lists
-        activeTicketsObservable.remove(removed);
-        resolvedTicketsObservable.add(removed);
+//        activeTicketsObservable.remove(removed);
+//        resolvedTicketsObservable.add(removed);
+        updateLists();
         return true;
     }
 
@@ -47,8 +69,8 @@ public class SupportDesk {
         Ticket t = resolvedTickets.pop();
         resolvedTicketsObservable.remove(t);
 
-        activeTickets.addLast(t);
-        activeTicketsObservable.add(t);
+        activeTickets.add(t);
+        updateLists();
         return true;
     }
 

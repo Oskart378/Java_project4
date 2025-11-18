@@ -1,3 +1,18 @@
+/*---------------------------------------------------
+Name: Oscar Lopez, Enoc Bernal, Brenda Benitez
+COP 2805C - Java Programming 2
+Fall 2025 - W 5:30 PM - 8:50 PM
+Assignment # 4
+Plagiarism Statement
+I certify that this assignment is my own work and that I have not
+copied in part or whole or otherwise plagiarized the work of other
+students, persons, Generative Pre-trained Generators (GPTs) or any other AI tools.
+I understand that students involved in academic dishonesty will face
+disciplinary sanctions in accordance with the College's Student Rights
+and Responsibilities Handbook (https://www.mdc.edu/rightsandresponsibilities)
+01234567890123456789012345678901234567890123456789012345678901234567890123456789
+----------------------------------------------------------*/
+
 package com.example.mdctechsupport;
 
 import javafx.application.Application;
@@ -19,7 +34,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-public class HelloApplication extends Application {
+public class SupportDeskApp extends Application {
 
     private SupportDesk supportDesk;
 
@@ -38,12 +53,15 @@ public class HelloApplication extends Application {
         supportDesk = new SupportDesk();
 
         BorderPane mainPane = new BorderPane();
+        mainPane.setBackground(new Background(
+                new BackgroundFill(Color.rgb(245, 247, 250), CornerRadii.EMPTY, Insets.EMPTY)
+        ));
         mainPane.setTop(createHeader());
         mainPane.setLeft(createAddTicketForm());
         mainPane.setCenter(createTicketsDisplay());
 
         Scene scene = new Scene(mainPane, 800, 580);
-        primaryStage.setTitle("MDC Tech Support System");
+        primaryStage.setTitle("MDC Tech Support Ticket System");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -66,6 +84,12 @@ public class HelloApplication extends Application {
     private Pane createAddTicketForm() {
         // Main container
         VBox formPane = createFormContainer();
+        formPane.setBackground(new Background(
+                new BackgroundFill(Color.rgb(232, 238, 247), new CornerRadii(8), Insets.EMPTY)
+        ));
+        formPane.setBorder(new Border(new BorderStroke(
+                Color.rgb(200, 210, 225), BorderStrokeStyle.SOLID, new CornerRadii(8), new BorderWidths(2)
+        )));
 
         // Form title
         Label formNameLabel = createSectionLabel("New Ticket");
@@ -76,6 +100,7 @@ public class HelloApplication extends Application {
         ticketIdTf.setTextFormatter(new TextFormatter<>(change ->
                 change.getControlNewText().matches("\\d*") ? change : null
         ));
+        ticketIdTf.setPromptText("Ex: 25");
 
         Label ticketIdError = createErrorLabel("* This ID is already taken");
         ticketIdTf.focusedProperty().addListener((obs, oldVal, newVal) -> {
@@ -142,6 +167,12 @@ public class HelloApplication extends Application {
     /* ---------------- TICKETS DISPLAY ---------------- */
     private Pane createTicketsDisplay() {
         VBox ticketDisplayPane = createFormContainer();
+        ticketDisplayPane.setBackground(new Background(
+                new BackgroundFill(Color.rgb(240, 243, 248), new CornerRadii(8), Insets.EMPTY)
+        ));
+        ticketDisplayPane.setBorder(new Border(new BorderStroke(
+                Color.rgb(200, 210, 225), BorderStrokeStyle.SOLID, new CornerRadii(8), new BorderWidths(2)
+        )));
 
         Label activeLbl = createSectionLabel("Active Tickets");
         Label resolvedLbl = createSectionLabel("Recently Resolved Tickets");
@@ -183,13 +214,13 @@ public class HelloApplication extends Application {
 
     private TableView<Ticket> createTicketTable() {
         TableView<Ticket> table = new TableView<>();
-        table.getColumns().addAll(createTicketColumns(table));
+        table.getColumns().addAll(createTicketColumns());
         table.setEditable(false);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         return table;
     }
 
-    private List<TableColumn<Ticket, ?>> createTicketColumns(TableView<Ticket> tableView) {
+    private List<TableColumn<Ticket, ?>> createTicketColumns() {
 
         //tableView.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         TableColumn<Ticket, Number> idCol = new TableColumn<>("ID");
@@ -233,8 +264,14 @@ public class HelloApplication extends Application {
 
         } catch (NumberFormatException ex) {
             markFieldError(ticketIdTf, "ID must be a valid number");
-        } catch (Exception ex) {
+        }
+
+        catch (IllegalArgumentException ex) {
             highlightFieldByError(ex.getMessage());
+        }
+
+        catch (Exception ex) {
+            highlightFieldByError("Error!");
         }
     }
 

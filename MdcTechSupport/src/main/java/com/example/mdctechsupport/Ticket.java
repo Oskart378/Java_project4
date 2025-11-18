@@ -1,3 +1,18 @@
+/*---------------------------------------------------
+Name: Oscar Lopez, Enoc Bernal, Brenda Benitez
+COP 2805C - Java Programming 2
+Fall 2025 - W 5:30 PM - 8:50 PM
+Assignment # 4
+Plagiarism Statement
+I certify that this assignment is my own work and that I have not
+copied in part or whole or otherwise plagiarized the work of other
+students, persons, Generative Pre-trained Generators (GPTs) or any other AI tools.
+I understand that students involved in academic dishonesty will face
+disciplinary sanctions in accordance with the College's Student Rights
+and Responsibilities Handbook (https://www.mdc.edu/rightsandresponsibilities)
+01234567890123456789012345678901234567890123456789012345678901234567890123456789
+----------------------------------------------------------*/
+
 package com.example.mdctechsupport;
 
 import javafx.beans.property.SimpleIntegerProperty;
@@ -20,16 +35,17 @@ public class Ticket {
         if (!Ticket.isIdAvailable(id))
             throw new IllegalArgumentException("Id is already used, try a different Id number");
         if (name == null || name.isBlank())
-            throw new IllegalArgumentException("Name can't be blank or null");
+            throw new IllegalArgumentException("Name can't be blank");
         if(issue == null || issue.isBlank())
-            throw new IllegalArgumentException("Issue can't be blank or null");
+            throw new IllegalArgumentException("Issue can't be blank");
         if(!isPriorityValid(priority))
             throw new IllegalArgumentException("Priority has to be one of the following values (low, medium or high)");
 
         this.id = new SimpleIntegerProperty(id);
         this.name = new SimpleStringProperty(name.trim());
         this.issue = new SimpleStringProperty(issue.trim());
-        this.priority = new SimpleStringProperty(priority.toLowerCase().trim());
+        this.priority = new SimpleStringProperty(priority.trim().substring(0,1).toUpperCase() +
+                priority.trim().substring(1).toLowerCase());
         usedIds.add(id);
     }
 
@@ -72,13 +88,11 @@ public class Ticket {
 
     public String getPriority() {
         // Return nicely formatted version
-        return priority.get().substring(0, 1).toUpperCase() + priority.get().substring(1);
+        return priority.get();
     }
 
     public SimpleStringProperty priorityProperty() {
-        return new SimpleStringProperty(
-                priority.getValue().substring(0, 1).toUpperCase() +
-                        priority.getValue().substring(1));
+        return priority;
     }
 
     @Override
