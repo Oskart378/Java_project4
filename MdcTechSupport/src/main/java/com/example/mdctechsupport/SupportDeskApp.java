@@ -60,7 +60,7 @@ public class SupportDeskApp extends Application {
         mainPane.setLeft(createAddTicketForm());
         mainPane.setCenter(createTicketsDisplay());
 
-        Scene scene = new Scene(mainPane, 800, 580);
+        Scene scene = new Scene(mainPane, 900, 580);
         primaryStage.setTitle("MDC Tech Support Ticket System");
         primaryStage.setScene(scene);
         primaryStage.show();
